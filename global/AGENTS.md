@@ -2,6 +2,8 @@
 
 ## 代码原则
 
+> 精简自 `engineering-philosophy.md`；完整版见 `skill://h-agent-docs/references/engineering-philosophy.md`（agent 环境可读时）
+
 ### 关注代码结构
 
 杜绝单纯的功能堆砌，每次执行任务前应考虑如何配合/重构现有架构来维持可读性、可维护性和健壮性。
@@ -32,23 +34,34 @@
 
 能用类型编码的约束不留到运行时。跨语言规范细节由对应 skill 提供（见下表）。
 
+## 隐私纪律
+
+凭据/个人隐私/商业机密/内网细节/用户要求不记录的内容，不进文档与追踪系统；敏感操作（生产数据/凭据处理等）不登记追踪；发现已记录隐私信息移除。
+
+信息来源不记录：注释/文档不标注来源。
+
 ## Skill 导航
 
 <CRITICAL>
 开始以下任务前，**必须**读取对应 skill：
 </CRITICAL>
 
-| 场景                                                                    | Skill                                                             |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| 功能开发/增量需求/重构（先讨论后实现、文档随讨论演进、spec 存档可分段） | `skill://h-incremental-dev`                                       |
-| 调试（复现→根因→先讨论再修复→回归→文档）                                | `skill://h-debug`                                                 |
-| 为项目生成/重写 agent 文档体系（AGENTS.md + docs/ + CONTEXT.md）        | `skill://h-agent-docs`                                            |
-| 跨语言工程哲学（类型驱动/DDD/契约式失败/RAII/封装噪声）                 | `skill://h-agent-docs/references/engineering-philosophy.md`       |
-| Python 项目规范（dataclass/Enum/窄化/DDD 分层）                         | `skill://h-agent-docs/references/python-craft.md`                 |
-| Rust 项目规范（newtype/enum+strum/tagged union/错误策略/RAII）          | `skill://h-agent-docs/references/rust-craft.md`                   |
-| TypeScript 项目规范（禁 any/类型优先/type predicate）                   | `skill://h-agent-docs/references/typescript-craft.md`             |
-| Nuxt/Vue 项目规范（组件模式/defineModel/shadcn/无感更新）               | `skill://h-agent-docs/references/typescript-craft.md`（Nuxt 节）  |
-| alova useRequest/突变/查询                                              | `skill://h-agent-docs/references/typescript-craft.md`（alova 节） |
-| 术语表（CONTEXT.md）编写格式                                            | `skill://h-agent-docs/references/CONTEXT-FORMAT.md`               |
+| 场景                                                             | Skill                                                             |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 规划/头脑风暴/需求明确（产出 spec 到项目指定承载）                 | `skill://h-planning`                                            |
+| 按 spec 实现（上文有任务按任务做；没有则查已有任务问哪个）  | `skill://h-implement`                                           |
+| 独立代码审查（review 代码/变更，两轴 + 坏味道）                       | `skill://h-code-review`                                           |
+| 调试（预期确认→反馈回路复现→假设核对→同意后修复→验收）           | `skill://h-debug`                                                 |
+| 主题调研（后台委托 + 一手来源 + 详细报告落盘 docs/research/）     | `skill://h-research`                                              |
+| 为项目生成/重建 agent 文档体系（AGENTS.md + docs/ + CONTEXT.md） | `skill://h-agent-docs`                                            |
+| 文档漂移/过时/升级后重构（审查+修复一体）                        | `skill://h-agent-docs`（维护模式）                                |
+| git 提交（提交工作流，从历史提交 diff 判断变更）                  | `skill://h-commit`                                               |
+| 跨语言工程哲学（类型驱动/DDD/契约式失败/RAII/封装噪声）          | `skill://h-agent-docs/references/engineering-philosophy.md`       |
+| Python 项目规范（dataclass/Enum/窄化/DDD 分层）                  | `skill://h-agent-docs/references/python-craft.md`                 |
+| Rust 项目规范（newtype/enum+strum/tagged union/错误策略/RAII）   | `skill://h-agent-docs/references/rust-craft.md`                   |
+| TypeScript 项目规范（禁 any/类型优先/type predicate）            | `skill://h-agent-docs/references/typescript-craft.md`             |
+| Nuxt/Vue 项目规范（组件模式/defineModel/shadcn/无感更新）        | `skill://h-agent-docs/references/typescript-craft.md`（Nuxt 节）  |
+| alova useRequest/突变/查询                                       | `skill://h-agent-docs/references/typescript-craft.md`（alova 节） |
+| 术语表（CONTEXT.md）编写格式                                     | `skill://h-agent-docs/references/CONTEXT-FORMAT.md`               |
 
 </CRITICAL_INSTRUCTION>

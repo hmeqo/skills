@@ -10,7 +10,7 @@
 
 ## Type Safety: No Bare Dicts
 
-跨模块/函数边界的数据容器用 `@dataclass` / `NamedTuple` / `BaseModel`，不返回裸 dict。内部临时组织不拘泥。
+数据模型（领域对象/跨边界数据）用 `@dataclass` / `NamedTuple` / `BaseModel`，不用 dict 实现数据类型。类型安全无特例。
 
 ```python
 @dataclass
@@ -28,7 +28,7 @@ class User(BaseModel):
 
 ## Union Fields + Narrowing Accessor
 
-`meta: dict` → `meta: Xxx | Yyy`，用 `@property` + `assert` 封装窄化逻辑，返回纯类型不留 `| None`：
+`meta: dict` → `meta: Xxx | Yyy`，用 `@property` 封装窄化逻辑，返回纯类型不留 `| None`，**Union 运行时分派用显式条件守卫**（`if not isinstance: raise`；`-O` 会剥离 assert，运行时分派必须运行时有效）；架构保证不可能为 None 的 Infallible 才用 assert（见下节）：
 
 ```python
 @dataclass
@@ -47,20 +47,28 @@ class Memory:
 
     @property
     def as_user_fact(self) -> UserFact:
-        assert isinstance(self.kind, UserFact), "only call on user fact"
+        if not isinstance(self.kind, UserFact):
+            raise TypeError("only call on user fact")
         return self.kind
 
     @property
     def as_note(self) -> Note:
-        assert isinstance(self.kind, Note), "only call on note"
+        if not isinstance(self.kind, Note):
+            raise TypeError("only call on note")
         return self.kind
+
+    @property
+    def as_meta(self) -> UserFact | Note:
+        if self.meta is None:
+            raise TypeError("only call when meta present")
+        return self.meta
 ```
 
 调用方不感知 Union，不写 `isinstance`，不检查 `None`。
 
 ## Infallible Narrowing
 
-> 通用原则见 engineering-philosophy.md「架构逻辑优先代替断言」——本模式是其 Python 落法。
+> 通用原则见 engineering-philosophy.md「架构逻辑优先代替断言」，本模式是其 Python 落法。
 
 你知道这里不可能为 None（架构无法消除、类型检查器无法判断），用 assert 封装在 property/method 中：
 
@@ -99,6 +107,27 @@ except Exception as exc:
 ```
 
 `dict.get()` 仅用于外部接口明确定义了默认值的可选字段。不用于内部数据的跨版本兼容。不做防御性向后兼容 fallback，除非任务明确要求。
+
+## Docstrings（PEP 257）
+
+公共 API（导出函数/类/模块）用 docstring 给调用者契约（参数/返回/异常），调用者不用读实现：
+
+```python
+def fetch_rows(keys: Sequence[str]) -> dict[str, tuple[str, ...]]:
+    """Fetches rows for the given keys.
+
+    Args:
+        keys: Row keys to fetch.
+
+    Returns:
+        Mapping of key to row data.
+
+    Raises:
+        KeyError: A key is missing from the table.
+    """
+```
+
+非公共/自解释代码不写 docstring（注释是最后手段，见哲学「注释纪律」）。
 
 ## Enum
 
@@ -164,7 +193,7 @@ with TempDir() as d:
 
 - 文件/锁/连接/句柄一律 `with`，不裸 open/acquire 后忘 close/release
 - 轻量场景用 `contextlib.contextmanager` 生成器写法
-- `with` 块即作用域——guard 从不需要被读取
+- `with` 块即作用域，guard 从不需要被读取
 
 ## DDD Layering
 
@@ -183,11 +212,11 @@ src/<project>/
 
 ## Qt QSS 样式作用域纪律
 
-> Qt Widgets 框架纪律，非 Python 语言问题——C++ Qt 项目同样适用。有非 Qt 的纯 Python 项目时拆为 qt-craft.md。
+> Qt Widgets 框架纪律，非 Python 语言问题，C++ Qt 项目同样适用。有非 Qt 的纯 Python 项目时拆为 qt-craft.md。
 
-- **局部样式用限定选择器标注作用域**——属性选择器（`QWidget[role="x"]`）或 **ID/objectName 限定**（`#name`）；裸类型/标签选择器（`QWidget { }`）会级联到所有后代并遮蔽全局弹窗/组件规则（历史泄漏：QFileDialog 挂组件下背景透明）
+- **局部样式用限定选择器标注作用域**：属性选择器（`QWidget[role="x"]`）或 **ID/objectName 限定**（`#name`）；裸类型/标签选择器（`QWidget { }`）会级联到所有后代并遮蔽全局弹窗/组件规则（历史泄漏：QFileDialog 挂组件下背景透明）
 - **弹窗/浮层独立挂载**，不继承容器的局部样式；全局弹窗背景规则集中在主题层（theme.py）一处
-- 样式级联取**最近带样式表祖先**——局部规则会整体遮蔽全局（Qt 设计如此），选择器必须限定范围
+- 样式级联取**最近带样式表祖先**，局部规则会整体遮蔽全局（Qt 设计如此），选择器必须限定范围
 
 ## TYPE_CHECKING + 惰性导入
 

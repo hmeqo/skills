@@ -4,10 +4,25 @@
 
 通过 enum 编码业务取值、newtype 包裹领域标识、Arc newtype 隐藏引用计数细节，用类型系统消除硬编码 string 和原始类型混淆。match 穷尽性检查代替运行时验证。
 
+## rustdoc（公共 API 文档）
+
+公共 API（导出类型/方法）用 `///` 文档，`# Panics`/`# Errors`/`# Safety` 记录 panic/错误/安全前提：
+
+```rust
+/// Returns the admin user.
+///
+/// # Panics
+/// Panics if no admin exists (invariant violation).
+pub fn admin_user(&self) -> &User { ... }
+```
+
+expect 路径必须记录 `# Panics`，调用者知道前提义务。新 crate 需 module 级 `//!` 文档。
+
 ## Toolchain
 
 - 按项目 `rust-toolchain.toml` 约定
 - `rustfmt.toml`: `imports_granularity = "Crate"`, `group_imports = "StdExternalCrate"`
+- `cargo clippy` 按项目 lint 配置跑（rustfmt + clippy 双刃），关键 lint 约定按项目（如 `expect_used`/`unwrap_used`）
 
 ## Newtype
 

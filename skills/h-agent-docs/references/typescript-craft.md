@@ -8,7 +8,7 @@
 
 ## 禁止 any
 
-业务代码禁止 any。
+业务代码禁止 any：未知值用 `unknown` + 收窄，不用 any。
 
 ## 类型优先
 
@@ -22,12 +22,8 @@ type Status = "idle" | "loading" | "success" | "error";
 const Permission = { Read: "read", Write: "write" } as const;
 type Permission = (typeof Permission)[keyof typeof Permission];
 
-// enum 或 const enum
-enum Color {
-  Red,
-  Green,
-  Blue,
-}
+// union / as const 优先；enum 与 isolatedModules 不兼容（Nuxt/Vite 默认开启，const enum 会运行时错误）
+type Color = "red" | "green" | "blue";
 ```
 
 ## type predicate 代替 as
@@ -40,6 +36,44 @@ const user = resp.data as User;
 function isUser(data: unknown): data is User {
   return typeof data === "object" && data !== null && "id" in data;
 }
+```
+
+## Discriminated Union + 穷尽 switch
+
+多态数据用判别联合（tagged union），穷尽 `never` switch 让编译器强制覆盖所有变体：
+
+```ts
+type Action =
+  | { type: "http"; url: string }
+  | { type: "delay"; seconds: number };
+
+function handle(a: Action): void {
+  switch (a.type) {
+    case "http":
+      break;
+    case "delay":
+      break;
+    default: {
+      const _exhaustive: never = a;
+      return _exhaustive;
+    }
+  }
+}
+```
+
+新变体加入后 `_exhaustive: never = a` 编译报错，强制处理新变体。
+
+## JSDoc / TSDoc（公共 API）
+
+公共接口（导出函数/类型）的 JSDoc 给调用者契约（参数/返回/泛型）：
+
+```ts
+/**
+ * Fetches a user by id.
+ * @param id - User id.
+ * @returns The user, or null if not found.
+ */
+export function fetchUser(id: number): Promise<User | null>;
 ```
 
 ## 封装过程噪声
@@ -108,15 +142,17 @@ components/
 
 ## 无感更新
 
-列表创建/编辑/删除后直接修改本地数组，不重新请求：
+变更（增/删/改）完成后，把新内容**写回本地数据**，不重新请求、不刷新页面，借助响应式自动传播，所有引用方（列表行、详情、统计）立即看到新效果。
 
-```ts
-list.items.unshift(result);
-list.total += 1;
+核心是**写回原始对象**：操作对象与列表行是同一引用，改一处、处处更新；持有副本或新值则写回无效。以服务端返回数据为准，不做本地猜测。
 
-const idx = items.findIndex((x) => x.id === id);
-if (idx !== -1) items.splice(idx, 1);
-```
+执行方式：
+
+- **创建**：把服务端返回的完整对象插入本地列表（顶部）。
+- **编辑**：用服务端返回的数据写回原对象引用，前提是表单/选中项持有的是列表元素的**引用**（v-model 直通），不是值拷贝，否则写不回列表。
+- **删除**：从列表中移除该对象。
+
+不适用时（数据源非本地持有、后端聚合/排序变化需完整刷新）才重新请求。
 
 ## alova — API 调用
 
